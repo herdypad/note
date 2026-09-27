@@ -1,0 +1,438 @@
+# Materi UKT: Database dan Keamanan Sistem Informasi
+**Uji Kompetensi Teknis – Jabatan Fungsional Pranata Komputer**
+
+> **Info ujian:** Selasa, 29 September 2026 • 3 batch • Hadir 15 menit sebelum mulai • 50 soal pilihan ganda • 45 menit (± 54 detik/soal)
+
+---
+
+# BAGIAN A – DATABASE
+
+## 1. Konsep Dasar
+
+| Istilah | Pengertian |
+|---|---|
+| **Basis data** | Kumpulan data terintegrasi yang saling berhubungan, disimpan terorganisir |
+| **DBMS** | Perangkat lunak pengelola basis data (MySQL, PostgreSQL, Oracle, SQL Server, MongoDB) |
+| **Entitas / Tabel (Relasi)** | Objek yang datanya disimpan |
+| **Atribut / Kolom (Field)** | Karakteristik entitas |
+| **Tuple / Record / Baris** | Satu kesatuan data dalam tabel |
+| **Domain** | Himpunan nilai yang diizinkan untuk atribut |
+| **Kardinalitas** (tabel) | Jumlah baris; **Degree** = jumlah kolom |
+| **Metadata / Data Dictionary** | Data tentang data (struktur, tipe, constraint) |
+
+- Keunggulan DBMS vs file tradisional: mengurangi **redundansi** & **inkonsistensi**, integritas, keamanan, akses bersama (konkurensi), independensi data.
+- **Arsitektur 3 level (ANSI/SPARC)**: **Eksternal** (view pengguna) – **Konseptual** (logis) – **Internal** (fisik).
+  - **Independensi data logis**: ubah skema konseptual tanpa ubah view eksternal. **Fisik**: ubah penyimpanan tanpa ubah skema konseptual.
+- Model data: hierarkis, jaringan, **relasional** (E.F. **Codd**, 1970), objek, dokumen/NoSQL.
+
+## 2. Kunci (Key) & Integritas
+
+| Key | Pengertian |
+|---|---|
+| **Super key** | Satu/lebih atribut yang mengidentifikasi baris secara unik |
+| **Candidate key** | Super key minimal (tidak ada atribut berlebih) |
+| **Primary key (PK)** | Candidate key terpilih; **unik & NOT NULL** |
+| **Alternate key** | Candidate key yang tidak dipilih jadi PK |
+| **Foreign key (FK)** | Atribut yang merujuk PK tabel lain (penghubung relasi) |
+| **Composite key** | Key yang terdiri dari >1 atribut |
+| **Surrogate key** | Key buatan tanpa makna bisnis (mis. auto-increment ID) |
+| **Natural key** | Key bermakna bisnis (mis. NIK, NPWP) |
+
+- **Entity integrity**: PK tidak boleh NULL. **Referential integrity**: nilai FK harus ada di PK rujukan atau NULL. **Domain integrity**: nilai sesuai domain.
+- Aksi referensial: `ON DELETE/UPDATE CASCADE`, `SET NULL`, `SET DEFAULT`, `RESTRICT`/`NO ACTION`.
+
+## 3. ERD
+
+- Notasi **Chen**: entitas (persegi panjang), atribut (elips), relasi (belah ketupat); entitas lemah (persegi ganda), atribut multivalue (elips ganda), atribut turunan (elips putus-putus), key (digarisbawahi).
+- Notasi **Crow's Foot**: kaki gagak = "banyak".
+- Kardinalitas: **1:1, 1:N, M:N**. Relasi **M:N diimplementasikan dengan tabel penghubung (junction/associative table)** berisi FK dari kedua tabel.
+- **Weak entity**: tidak punya key sendiri, bergantung pada entitas pemilik (mis. *Tanggungan* bergantung pada *Pegawai*).
+- Partisipasi: **total** (wajib) vs **parsial** (opsional). Spesialisasi/generalisasi (EER).
+
+## 4. Normalisasi
+
+Tujuan: menghilangkan **redundansi** dan **anomali** (insert, update, delete).
+
+| Bentuk | Syarat |
+|---|---|
+| **UNF** | Masih ada grup berulang / atribut multivalue |
+| **1NF** | Semua atribut **atomik**, tidak ada grup berulang |
+| **2NF** | 1NF + **tidak ada ketergantungan parsial** (atribut non-key bergantung pada seluruh composite PK) |
+| **3NF** | 2NF + **tidak ada ketergantungan transitif** (non-key → non-key) |
+| **BCNF** | Setiap determinan adalah **candidate key** |
+| **4NF** | BCNF + tidak ada **multivalued dependency** |
+| **5NF** | 4NF + tidak ada **join dependency** |
+
+- **Functional dependency (FD)**: A → B (nilai A menentukan nilai B).
+- Contoh transitif: `NIP → KodeUnit → NamaUnit` → pecah menjadi tabel Pegawai(NIP, KodeUnit) & Unit(KodeUnit, NamaUnit).
+- **Denormalisasi**: sengaja menambah redundansi demi performa baca (umum di data warehouse).
+
+## 5. SQL
+
+| Kategori | Perintah |
+|---|---|
+| **DDL** (Data Definition) | `CREATE`, `ALTER`, `DROP`, `TRUNCATE`, `RENAME` |
+| **DML** (Data Manipulation) | `SELECT`*, `INSERT`, `UPDATE`, `DELETE`, `MERGE` |
+| **DCL** (Data Control) | **`GRANT`**, **`REVOKE`** |
+| **TCL** (Transaction Control) | **`COMMIT`**, **`ROLLBACK`**, `SAVEPOINT` |
+
+*SELECT kadang digolongkan **DQL** (Data Query Language).
+
+- **DELETE** (DML, per baris, bisa WHERE & rollback, memicu trigger) vs **TRUNCATE** (DDL, hapus semua baris, cepat, reset identitas) vs **DROP** (hapus tabel beserta strukturnya).
+- **Urutan eksekusi logis**: `FROM → JOIN → WHERE → GROUP BY → HAVING → SELECT → DISTINCT → ORDER BY → LIMIT`.
+- **WHERE** menyaring baris **sebelum** agregasi; **HAVING** menyaring **hasil agregasi/grup**.
+- Fungsi agregat: `COUNT`, `SUM`, `AVG`, `MIN`, `MAX`. `COUNT(*)` menghitung semua baris; `COUNT(kolom)` **mengabaikan NULL**.
+- Operator: `LIKE` (`%` banyak karakter, `_` satu karakter), `IN`, `BETWEEN` (inklusif), `IS NULL` (bukan `= NULL`).
+- `UNION` (hapus duplikat) vs `UNION ALL` (dengan duplikat); `INTERSECT`, `EXCEPT`/`MINUS`.
+- Constraint: `PRIMARY KEY`, `FOREIGN KEY`, `UNIQUE`, `NOT NULL`, `CHECK`, `DEFAULT`.
+
+### JOIN
+| JOIN | Hasil |
+|---|---|
+| **INNER JOIN** | Hanya baris yang **cocok** di kedua tabel |
+| **LEFT (OUTER) JOIN** | Semua baris tabel **kiri** + yang cocok dari kanan (tidak cocok = NULL) |
+| **RIGHT (OUTER) JOIN** | Semua baris tabel **kanan** + yang cocok dari kiri |
+| **FULL OUTER JOIN** | Semua baris dari kedua tabel |
+| **CROSS JOIN** | **Perkalian kartesius** (m × n baris) |
+| **SELF JOIN** | Tabel di-join dengan dirinya sendiri (mis. pegawai–atasan) |
+
+```sql
+SELECT u.nama_unit, COUNT(p.nip) AS jumlah
+FROM unit u
+LEFT JOIN pegawai p ON p.kode_unit = u.kode_unit
+WHERE u.aktif = 1
+GROUP BY u.nama_unit
+HAVING COUNT(p.nip) > 10
+ORDER BY jumlah DESC;
+```
+
+### Objek Database Lain
+- **View**: tabel virtual hasil query (penyederhanaan & pembatasan akses). **Materialized view**: hasilnya disimpan fisik.
+- **Index**: mempercepat pencarian (umumnya **B-Tree**; juga hash, bitmap), tapi memperlambat INSERT/UPDATE & butuh ruang. **Clustered index** (menentukan urutan fisik, 1 per tabel) vs **non-clustered**.
+- **Stored procedure** (dipanggil eksplisit), **Function** (mengembalikan nilai), **Trigger** (berjalan **otomatis** saat INSERT/UPDATE/DELETE), **Cursor** (memproses baris satu per satu), **Sequence**.
+
+### Aljabar Relasional
+**Selection σ** (pilih baris) • **Projection π** (pilih kolom) • **Union ∪** • **Difference −** • **Cartesian product ×** • **Join ⋈** • **Rename ρ** • Intersection ∩ • Division ÷.
+
+## 6. Transaksi & Konkurensi
+
+### ACID
+| Sifat | Arti |
+|---|---|
+| **Atomicity** | Semua atau tidak sama sekali (*all or nothing*) |
+| **Consistency** | Transaksi membawa DB dari satu kondisi valid ke kondisi valid lain |
+| **Isolation** | Transaksi bersamaan tidak saling mengganggu |
+| **Durability** | Transaksi yang sudah **COMMIT** tetap tersimpan walau sistem gagal |
+
+### Masalah Konkurensi & Isolation Level
+| Masalah | Penjelasan |
+|---|---|
+| **Lost update** | Dua transaksi update data sama, salah satu tertimpa |
+| **Dirty read** | Membaca data yang **belum di-commit** |
+| **Non-repeatable read** | Membaca baris yang sama dua kali, **nilainya berubah** |
+| **Phantom read** | Query sama menghasilkan **jumlah baris berbeda** |
+
+| Isolation level | Dirty | Non-repeatable | Phantom |
+|---|---|---|---|
+| Read Uncommitted | ✔ mungkin | ✔ | ✔ |
+| **Read Committed** | ✘ | ✔ | ✔ |
+| **Repeatable Read** | ✘ | ✘ | ✔ |
+| **Serializable** (paling ketat) | ✘ | ✘ | ✘ |
+
+- **Locking**: **Shared lock (S)** untuk baca, **Exclusive lock (X)** untuk tulis. **Two-Phase Locking (2PL)**: fase *growing* lalu *shrinking*.
+- **Deadlock**: dua transaksi saling menunggu lock → dideteksi (wait-for graph) lalu salah satu di-rollback.
+- **Optimistic** (cek konflik saat commit, mis. versi/timestamp) vs **Pessimistic** concurrency (kunci di awal). **MVCC** (PostgreSQL, Oracle): pembaca tidak memblokir penulis.
+
+### Recovery
+- **Transaction log / Write-Ahead Logging (WAL)**: log ditulis sebelum data. **Checkpoint** memperpendek waktu pemulihan.
+- **Redo** (ulang transaksi ter-commit) & **Undo** (batalkan transaksi belum commit).
+- Backup DB: full, differential, incremental, **transaction log backup** (memungkinkan *point-in-time recovery*).
+
+## 7. Arsitektur & Teknologi Data
+
+### Replikasi & Skalabilitas
+- **Replikasi** master–slave (primary–replica) / multi-master; sinkron vs asinkron.
+- **Scale up (vertikal)**: tambah CPU/RAM; **Scale out (horizontal)**: tambah server.
+- **Partitioning** (dalam satu DB) & **Sharding** (pemecahan data horizontal ke banyak server).
+
+### NoSQL
+| Tipe | Contoh | Kegunaan |
+|---|---|---|
+| **Key-Value** | **Redis**, DynamoDB | Cache, sesi |
+| **Document** | **MongoDB**, CouchDB | Data semi-terstruktur (JSON/BSON) |
+| **Column-family** (wide column) | **Cassandra**, HBase | Data besar, tulis cepat |
+| **Graph** | **Neo4j** | Relasi kompleks (jejaring sosial, deteksi fraud) |
+
+- **Teorema CAP**: sistem terdistribusi hanya bisa menjamin **2 dari 3**: **Consistency, Availability, Partition tolerance**.
+- **ACID** (RDBMS) vs **BASE** (NoSQL: *Basically Available, Soft state, Eventually consistent*).
+
+### Data Warehouse & Analitik
+| OLTP | OLAP |
+|---|---|
+| Transaksi harian (insert/update cepat) | Analisis & pelaporan historis |
+| Ternormalisasi | Denormalisasi (star/snowflake) |
+| Data terkini | Data historis, agregat |
+
+- **Data warehouse** (Inmon: *subject-oriented, integrated, time-variant, non-volatile*); **Data mart** = subset per unit/subjek; **Data lake** = data mentah beragam format; **Lakehouse** = gabungan keduanya.
+- **ETL** (Extract–Transform–Load) vs **ELT** (transformasi setelah dimuat, umum di cloud).
+- Skema: **Star schema** (tabel **fakta** di tengah + tabel **dimensi**), **Snowflake** (dimensi dinormalisasi), Galaxy/fact constellation.
+- Operasi OLAP: **roll-up** (agregasi ke level lebih tinggi), **drill-down** (ke detail), **slice** (1 dimensi), **dice** (beberapa dimensi), **pivot**.
+- **Big Data 5V**: Volume, Velocity, Variety, Veracity, Value. Teknologi: Hadoop (HDFS, MapReduce), Spark.
+- **Data mining**: klasifikasi, klasterisasi, asosiasi (market basket), regresi.
+
+## 8. Administrasi & Keamanan Database
+- Peran **DBA**: instalasi, desain fisik, tuning, backup/recovery, keamanan, manajemen user.
+- **Least privilege** – berikan hak minimum via `GRANT`/`REVOKE` dan **role**.
+- **Enkripsi**: **at rest** (mis. **TDE – Transparent Data Encryption**), **in transit** (TLS), enkripsi kolom sensitif.
+- **Data masking** (menyamarkan data, mis. untuk lingkungan uji), **tokenisasi**, **anonimisasi/pseudonimisasi** (UU PDP).
+- **Database auditing**: mencatat siapa mengakses/mengubah apa; **DAM** (Database Activity Monitoring).
+- Ancaman: **SQL injection** (cegah dengan **parameterized query**), privilege escalation, akun default, backup tidak terenkripsi.
+- Tuning: indeks tepat, hindari `SELECT *`, analisis **execution plan** (`EXPLAIN`).
+
+---
+
+# BAGIAN B – KEAMANAN SISTEM INFORMASI
+
+## 9. Prinsip Dasar
+
+| Prinsip | Arti | Contoh kontrol |
+|---|---|---|
+| **Confidentiality** | Hanya pihak berwenang yang dapat mengakses | Enkripsi, kontrol akses |
+| **Integrity** | Data akurat & tidak diubah tanpa izin | **Hash**, tanda tangan digital, checksum |
+| **Availability** | Dapat diakses saat dibutuhkan | Redundansi, backup, anti-DDoS |
+| **Authenticity** | Keaslian identitas/sumber | Sertifikat digital |
+| **Non-repudiation** | Tidak dapat menyangkal tindakan | **Tanda tangan digital**, log audit |
+
+- **AAA**: **Authentication** (siapa Anda) → **Authorization** (apa yang boleh) → **Accounting/Auditing** (apa yang dilakukan).
+- Identifikasi (mengaku identitas, mis. username) ≠ Autentikasi (membuktikan, mis. password).
+- Prinsip: **least privilege**, **need to know**, **defense in depth**, **separation of duties**, **fail-safe**, security by design, **zero trust**.
+- **Parkerian Hexad**: CIA + Possession/Control, Authenticity, Utility.
+
+## 10. Ancaman & Serangan
+
+### Malware
+| Jenis | Ciri |
+|---|---|
+| **Virus** | Menempel pada file, butuh **aksi pengguna** untuk menyebar |
+| **Worm** | Menyebar **sendiri** lewat jaringan tanpa host file |
+| **Trojan** | Menyamar sebagai program sah |
+| **Ransomware** | **Mengenkripsi** data & meminta tebusan |
+| **Spyware / Keylogger** | Memata-matai / merekam ketikan |
+| **Rootkit** | Menyembunyikan keberadaan & memberi akses tingkat tinggi |
+| **Backdoor** | Jalan masuk tersembunyi yang melewati autentikasi |
+| **Botnet** | Jaringan komputer terinfeksi (zombie) dikendalikan **C2**, sering untuk DDoS |
+| **Logic bomb** | Aktif saat kondisi/waktu tertentu |
+| **Fileless malware** | Berjalan di memori, memanfaatkan tool sah (PowerShell) |
+
+### Social Engineering
+**Phishing** (email massal) • **Spear phishing** (terarah) • **Whaling** (target pejabat/eksekutif) • **Vishing** (telepon) • **Smishing** (SMS/WhatsApp) • **Pretexting** (skenario palsu) • **Baiting** (umpan, mis. USB) • **Tailgating/Piggybacking** (membuntuti masuk area fisik) • **Shoulder surfing** • Dumpster diving • **BEC** (Business Email Compromise).
+
+### Serangan Lain
+- **DoS/DDoS**, **MITM**, **Replay attack**, Session hijacking, **Zero-day** (celah belum ada patch), **APT** (Advanced Persistent Threat – terorganisir, jangka panjang), **Supply chain attack**, **Insider threat**.
+- Serangan password: **brute force**, **dictionary**, **credential stuffing** (pakai kredensial bocor dari situs lain), **password spraying** (1 password umum ke banyak akun), **rainbow table** (dicegah dengan **salt**).
+- Web: SQL injection, XSS, CSRF, SSRF, directory traversal, command injection.
+
+### Kerangka Serangan
+- **Cyber Kill Chain (Lockheed Martin)**: Reconnaissance → Weaponization → Delivery → Exploitation → Installation → Command & Control → Actions on Objectives.
+- **MITRE ATT&CK**: basis pengetahuan **taktik, teknik, dan prosedur (TTP)** penyerang.
+
+## 11. Kriptografi
+
+| Jenis | Kunci | Algoritma | Kegunaan |
+|---|---|---|---|
+| **Simetris** | **1 kunci sama** (rahasia) untuk enkripsi & dekripsi | **AES** (128/192/256), DES (usang), 3DES, ChaCha20 | Enkripsi data massal, cepat |
+| **Asimetris** | **Pasangan kunci publik & privat** | **RSA**, **ECC**, Diffie-Hellman (pertukaran kunci), DSA | Pertukaran kunci, tanda tangan digital |
+| **Hash** | Tanpa kunci, **satu arah**, output panjang tetap | **SHA-256/SHA-2**, SHA-3; MD5 & SHA-1 (sudah lemah) | Integritas, penyimpanan password (+salt) |
+
+- **Kerahasiaan**: enkripsi dengan **kunci publik penerima** → hanya penerima (kunci privat) yang dapat membuka.
+- **Tanda tangan digital**: hash pesan dienkripsi dengan **kunci privat pengirim** → diverifikasi dengan **kunci publik pengirim** → menjamin **integritas, autentikasi, non-repudiation**.
+- **HMAC**: hash + kunci rahasia → integritas & autentikasi pesan.
+- Jumlah kunci simetris untuk n pengguna: **n(n–1)/2**; asimetris: **2n**.
+- **Encoding** (Base64) ≠ enkripsi (dapat dibalik tanpa kunci).
+- **Steganografi**: menyembunyikan pesan dalam media lain (gambar/audio).
+
+### PKI (Public Key Infrastructure)
+- Komponen: **CA** (Certificate Authority – menerbitkan & menandatangani sertifikat), **RA** (Registration Authority – verifikasi identitas), sertifikat **X.509**, **CRL/OCSP** (status pencabutan).
+- **TLS/HTTPS**: handshake menggunakan asimetris untuk bertukar kunci, lalu data dienkripsi **simetris** (session key). Versi aman: **TLS 1.2 & 1.3**; SSL & TLS 1.0/1.1 usang.
+- Konteks nasional: **BSrE (Balai Sertifikasi Elektronik) – BSSN** sebagai penyelenggara sertifikat elektronik instansi pemerintah; tanda tangan elektronik **tersertifikasi** memiliki kekuatan hukum (UU ITE, PP 71/2019).
+
+## 12. Kontrol Akses & Autentikasi
+
+### Faktor Autentikasi
+| Faktor | Contoh |
+|---|---|
+| **Something you know** | Password, PIN |
+| **Something you have** | Token, smart card, **OTP** di ponsel |
+| **Something you are** | **Biometrik** (sidik jari, wajah, iris) |
+| Somewhere you are / Something you do | Lokasi, pola perilaku |
+
+- **MFA** = minimal 2 faktor **berbeda jenis** (password + PIN bukan MFA).
+- Biometrik: **FAR** (False Acceptance Rate – orang salah diterima), **FRR** (False Rejection Rate – orang sah ditolak), **CER/EER** (titik FAR = FRR; makin rendah makin akurat).
+- **SSO**, federasi identitas (**SAML**, **OAuth 2.0**, **OpenID Connect**), **Kerberos** (tiket, KDC), LDAP/Active Directory.
+- **IAM** & **PAM** (Privileged Access Management) untuk akun berhak istimewa.
+
+### Model Kontrol Akses
+| Model | Ciri |
+|---|---|
+| **DAC** (Discretionary) | **Pemilik** data menentukan hak akses (mis. permission file) |
+| **MAC** (Mandatory) | Berdasarkan **label/klasifikasi keamanan** yang ditetapkan sistem (militer: Rahasia, Sangat Rahasia) |
+| **RBAC** (Role-Based) | Hak diberikan berdasarkan **peran/jabatan** |
+| **ABAC** (Attribute-Based) | Berdasarkan **atribut** (pengguna, sumber daya, lingkungan, waktu) |
+| Rule-based | Berdasarkan aturan (mis. ACL firewall) |
+
+- Model formal: **Bell-LaPadula** (kerahasiaan: *no read up, no write down*), **Biba** (integritas: *no read down, no write up*), Clark-Wilson (integritas komersial).
+
+## 13. Jenis Kontrol Keamanan
+
+| Berdasarkan kategori | Contoh |
+|---|---|
+| **Administratif / Manajerial** | Kebijakan, prosedur, pelatihan kesadaran, background check |
+| **Teknis / Logis** | Firewall, enkripsi, antivirus, MFA |
+| **Fisik** | Kunci, CCTV, satpam, pagar |
+
+| Berdasarkan fungsi | Contoh |
+|---|---|
+| **Preventif** | Firewall, kontrol akses, enkripsi |
+| **Detektif** | IDS, CCTV, log audit, SIEM |
+| **Korektif** | Restore backup, patch, antivirus menghapus malware |
+| **Deterrent** (pencegah psikologis) | Papan peringatan, kebijakan sanksi |
+| **Recovery** | DRP, backup |
+| **Compensating** (pengganti) | Kontrol alternatif ketika kontrol utama tidak dapat diterapkan |
+
+## 14. Manajemen Risiko Keamanan
+
+- **Aset** – **Ancaman (threat)** – **Kerentanan (vulnerability)** → **Risiko**. Risiko ≈ Kemungkinan × Dampak.
+- **Risiko inheren** (sebelum kontrol) → **Risiko residual** (setelah kontrol).
+- Analisis **kualitatif** (tinggi/sedang/rendah) vs **kuantitatif**:
+  - **SLE = AV × EF** (Single Loss Expectancy = Nilai Aset × Exposure Factor)
+  - **ALE = SLE × ARO** (Annualized Loss Expectancy; ARO = frekuensi kejadian per tahun)
+  - Kontrol layak jika biaya tahunan kontrol < penurunan ALE.
+- Penanganan: **Mitigasi, Transfer (asuransi), Menghindari, Menerima**.
+- Standar: **ISO/IEC 27001** (SMKI), **27002** (kontrol), **27005** (risiko), **27035** (insiden), **27701** (privasi), **NIST SP 800-30**.
+
+### NIST Cybersecurity Framework 2.0 (2024) – 6 Fungsi
+**Govern** (baru di 2.0) • **Identify** • **Protect** • **Detect** • **Respond** • **Recover**.
+
+## 15. Penanganan Insiden & Pengujian Keamanan
+
+### Siklus Penanganan Insiden (NIST SP 800-61)
+1. **Preparation** (persiapan)
+2. **Detection & Analysis** (deteksi & analisis)
+3. **Containment, Eradication & Recovery** (penahanan, pemberantasan, pemulihan)
+4. **Post-Incident Activity** (*lessons learned*)
+
+> NIST SP 800-61 Rev. 3 (2025) menyelaraskan siklus ini dengan fungsi NIST CSF 2.0.
+
+- **CSIRT** (Computer Security Incident Response Team): **Gov-CSIRT/BSSN** di tingkat nasional sektor pemerintah, **CSIRT Instansi** di tiap K/L/D.
+- **SOC** (Security Operations Center): pemantauan keamanan 24/7.
+
+### Forensik Digital
+- **Chain of custody**: dokumentasi rantai penguasaan barang bukti agar sah secara hukum.
+- **Order of volatility** (akuisisi dari paling mudah hilang): **Register/Cache → RAM → status jaringan/proses → disk → log jarak jauh → media arsip**.
+- Buat **image** bit-by-bit, verifikasi dengan **hash**, analisis salinan (bukan barang bukti asli); gunakan **write blocker**.
+
+### Pengujian Keamanan
+| Vulnerability Assessment (VA) | Penetration Test (Pentest) |
+|---|---|
+| **Mengidentifikasi** & memprioritaskan kerentanan (umumnya otomatis, luas) | **Mengeksploitasi** kerentanan untuk membuktikan dampak (lebih dalam, manual) |
+
+- Pentest: **Black box** (tanpa info), **Grey box** (sebagian info), **White box** (info lengkap). Wajib ada **izin tertulis & rules of engagement**.
+- Tahapan: Perencanaan → Reconnaissance → Scanning → Exploitation (gaining access) → Maintaining access → Pelaporan.
+- **CVE** (identitas kerentanan publik), **CWE** (jenis kelemahan), **CVSS** skor 0–10: **Low 0,1–3,9 • Medium 4,0–6,9 • High 7,0–8,9 • Critical 9,0–10,0**.
+- **Red team** (penyerang) • **Blue team** (bertahan) • **Purple team** (kolaborasi). **Honeypot**: sistem umpan untuk memancing & mempelajari penyerang.
+- **Hardening**: matikan layanan tidak perlu, ganti kredensial default, patch berkala, konfigurasi aman (CIS Benchmark).
+
+## 16. Regulasi & Kebijakan Nasional
+
+| Regulasi | Pokok materi |
+|---|---|
+| **UU 27/2022 – Pelindungan Data Pribadi** | Subjek data, **Pengendali** & **Prosesor** data; data pribadi **umum** vs **spesifik**; hak subjek data (akses, koreksi, hapus, menarik persetujuan); dasar pemrosesan (persetujuan, kontrak, kewajiban hukum, kepentingan vital, tugas publik, kepentingan sah); **notifikasi kegagalan pelindungan paling lambat 3 × 24 jam**; wajib **Pejabat/Petugas Pelindungan Data Pribadi (DPO)** & **DPIA** untuk pemrosesan berisiko tinggi; sanksi administratif hingga denda **maks. 2% pendapatan tahunan**; masa transisi 2 tahun (berlaku penuh **Oktober 2024**) |
+| **UU ITE** (UU 11/2008 jo. 19/2016 jo. 1/2024) | Informasi & transaksi elektronik, tanda tangan elektronik, larangan akses ilegal, intersepsi, perusakan sistem |
+| **PP 71/2019 – PSTE** | Penyelenggara Sistem Elektronik (**PSE lingkup publik** & **lingkup privat**); PSE publik wajib mengelola & menyimpan data **di Indonesia** (kecuali teknologi tidak tersedia); sertifikat keandalan & tanda tangan elektronik |
+| **Perpres 28/2021** | **BSSN** (Badan Siber dan Sandi Negara) |
+| **Perpres 82/2022** | **Pelindungan Infrastruktur Informasi Vital (IIV)** |
+| **Perpres 47/2023** | **Strategi Keamanan Siber Nasional** & Manajemen Krisis Siber |
+| **Peraturan BSSN 4/2021** | Pedoman Manajemen Keamanan Informasi SPBE & Standar Teknis Keamanan SPBE |
+| **Peraturan BSSN 8/2020** | Sistem Pengamanan dalam Penyelenggaraan Sistem Elektronik |
+| **UU 14/2008 – KIP** | Informasi publik & **informasi yang dikecualikan** (uji konsekuensi) |
+
+- **Indeks KAMI** (BSSN): menilai kesiapan keamanan informasi berbasis ISO 27001 — area: Tata Kelola, Pengelolaan Risiko, Kerangka Kerja, Pengelolaan Aset, Teknologi & Keamanan Informasi, (+ Suplemen: pihak ketiga, cloud, pelindungan data pribadi); kategori sistem elektronik: **Rendah, Tinggi, Strategis**.
+- **Klasifikasi informasi** umum: Publik/Terbuka, Internal/Terbatas, Rahasia, Sangat Rahasia.
+- Kewajiban **kerahasiaan data perpajakan** (Pasal 34 UU KUP) relevan di lingkungan Kemenkeu/DJP.
+
+---
+
+## 17. Tips Menjawab Soal
+- **WHERE vs HAVING**: HAVING untuk kondisi pada fungsi agregat.
+- **2NF → parsial**, **3NF → transitif**, **BCNF → determinan harus candidate key**.
+- **Dirty read** = baca data belum commit; **Phantom** = jumlah baris berubah.
+- **GRANT/REVOKE = DCL**, **COMMIT/ROLLBACK = TCL**, **TRUNCATE = DDL**.
+- **Integritas → hash**; **Kerahasiaan → enkripsi**; **Non-repudiation → tanda tangan digital (kunci privat pengirim)**.
+- **Virus butuh host & aksi pengguna; worm menyebar sendiri.**
+- **DAC = pemilik**, **MAC = label**, **RBAC = peran**.
+- **SLE = AV × EF**, **ALE = SLE × ARO**.
+
+---
+
+## 18. Latihan Soal
+
+1. Perintah SQL yang termasuk **DCL** adalah…
+   A. COMMIT  B. ALTER  **C. GRANT**  D. UPDATE
+2. Klausa untuk menyaring hasil **fungsi agregat** adalah…
+   A. WHERE  **B. HAVING**  C. ORDER BY  D. DISTINCT
+3. Tabel A berisi 5 baris dan tabel B berisi 4 baris. Hasil **CROSS JOIN** A dan B adalah…
+   A. 9 baris  **B. 20 baris**  C. 5 baris  D. 4 baris
+4. JOIN yang menampilkan **seluruh** baris tabel kiri walaupun tidak memiliki pasangan di tabel kanan adalah…
+   A. INNER JOIN  **B. LEFT JOIN**  C. RIGHT JOIN  D. CROSS JOIN
+5. Suatu tabel sudah 1NF, dan atribut non-key hanya bergantung pada **sebagian** composite primary key. Tabel ini **belum** memenuhi…
+   A. 1NF  **B. 2NF**  C. 3NF  D. BCNF
+6. Ketergantungan **NIP → KodeUnit → NamaUnit** merupakan ketergantungan…
+   A. Parsial  **B. Transitif**  C. Multivalue  D. Join
+7. Primary key **tidak boleh bernilai NULL** merupakan aturan…
+   **A. Entity integrity**  B. Referential integrity  C. Domain integrity  D. User-defined integrity
+8. Relasi **M:N** antara Pegawai dan Pelatihan diimplementasikan dengan…
+   A. Menambah FK di tabel Pegawai  B. Menggabungkan kedua tabel  **C. Membuat tabel penghubung**  D. Membuat index
+9. Sifat ACID yang menjamin transaksi yang telah di-commit **tetap tersimpan walau terjadi crash** adalah…
+   A. Atomicity  B. Consistency  C. Isolation  **D. Durability**
+10. Transaksi membaca data yang diubah transaksi lain yang **belum di-commit** disebut…
+    **A. Dirty read**  B. Phantom read  C. Non-repeatable read  D. Lost update
+11. Isolation level yang mencegah dirty read, non-repeatable read, **dan** phantom read adalah…
+    A. Read Uncommitted  B. Read Committed  C. Repeatable Read  **D. Serializable**
+12. Objek database yang **dijalankan otomatis** ketika terjadi INSERT/UPDATE/DELETE adalah…
+    A. View  B. Stored procedure  **C. Trigger**  D. Index
+13. Menurut teorema **CAP**, sistem terdistribusi hanya dapat menjamin…
+    A. Ketiga sifat sekaligus  **B. Dua dari tiga sifat**  C. Satu sifat  D. Tergantung DBMS
+14. Operasi OLAP untuk melihat data dari level ringkas ke level **lebih rinci** adalah…
+    A. Roll-up  **B. Drill-down**  C. Slice  D. Pivot
+15. Aspek keamanan yang dijamin oleh **fungsi hash** adalah…
+    A. Kerahasiaan  **B. Integritas**  C. Ketersediaan  D. Otorisasi
+16. Untuk membuat **tanda tangan digital**, pengirim mengenkripsi hash pesan dengan…
+    A. Kunci publik pengirim  **B. Kunci privat pengirim**  C. Kunci publik penerima  D. Kunci privat penerima
+17. Algoritma berikut yang termasuk kriptografi **simetris** adalah…
+    A. RSA  B. ECC  **C. AES**  D. SHA-256
+18. Malware yang **menyebar sendiri** melalui jaringan tanpa perlu menempel pada file adalah…
+    A. Virus  **B. Worm**  C. Trojan  D. Rootkit
+19. Serangan phishing yang secara khusus menargetkan **pimpinan/pejabat tinggi** disebut…
+    A. Vishing  B. Smishing  **C. Whaling**  D. Baiting
+20. Login menggunakan **password dan OTP dari aplikasi di ponsel** menerapkan…
+    A. SSO  **B. Multi-factor authentication**  C. RBAC  D. Biometrik
+21. Model kontrol akses yang memberikan hak berdasarkan **jabatan/peran** pengguna adalah…
+    A. DAC  B. MAC  **C. RBAC**  D. ABAC
+22. CCTV dan log audit termasuk kontrol yang bersifat…
+    A. Preventif  **B. Detektif**  C. Korektif  D. Deterrent
+23. Nilai aset Rp1 miliar, exposure factor 40%, dan kejadian diperkirakan 0,5 kali per tahun. Nilai **ALE** adalah…
+    A. Rp400 juta  **B. Rp200 juta**  C. Rp500 juta  D. Rp40 juta
+    *(SLE = 1 M × 40% = 400 jt; ALE = 400 jt × 0,5 = 200 jt)*
+24. Tahap penanganan insiden (NIST SP 800-61) setelah insiden terdeteksi dan dianalisis adalah…
+    A. Preparation  **B. Containment, Eradication & Recovery**  C. Lessons learned  D. Reconnaissance
+25. Skor CVSS **9,8** dikategorikan sebagai…
+    A. Medium  B. High  **C. Critical**  D. Low
+26. Menurut UU PDP, pengendali data wajib menyampaikan pemberitahuan kegagalan pelindungan data pribadi paling lambat…
+    A. 1 × 24 jam  **B. 3 × 24 jam**  C. 7 hari  D. 14 hari
+27. Data berikut yang termasuk **data pribadi yang bersifat spesifik** menurut UU PDP adalah…
+    A. Nama lengkap  B. Jenis kelamin  **C. Data biometrik**  D. Kewarganegaraan
+28. Dokumentasi yang mencatat siapa saja yang menguasai barang bukti digital sejak ditemukan disebut…
+    A. Order of volatility  **B. Chain of custody**  C. Audit trail  D. Hash value
+
+---
+*Catatan: Materi disusun dari pengetahuan umum; verifikasi ulang detail regulasi (UU PDP, Peraturan BSSN) dan versi standar (NIST, ISO) dengan sumber resmi.*
